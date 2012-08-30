@@ -1,0 +1,89 @@
+package swe.kbk.grouppick.Zephyyrr;
+
+import java.util.logging.Logger;
+
+import com.nijiko.permissions.Group;
+import com.nijiko.permissions.PermissionHandler;
+import com.nijiko.permissions.User;
+
+public class PermissionsModifier {
+	private PermissionHandler ph;
+	private Logger log;
+
+	public PermissionsModifier(PermissionHandler permH, Logger logger) {
+		ph = permH;
+		log = logger;
+	}
+
+	public String findRace(User user) {
+		return "";
+	}
+
+	/**
+	 * This is the almighty method to rule them all.
+	 * If you need to change someone's group along a track, this is the method.
+	 * OBSEVERVE that it does not perform any permissions checks.
+	 * It is your duty to check permissions before calling this method.
+	 * 
+	 * @param player the player to be modified.
+	 * @param group the group it is currently a part of, that is to be modified.
+	 * @param track the track the group is a part of, and contains as the next step the target group.
+	 * @param up if you wish to promote the player or demote it.
+	 * @return true if everything went well. else false.
+	 */
+	public boolean changeGroup(User player, Group group, String track, boolean up) {
+		boolean result = false;
+		String world = player.getWorld();
+		if (world == null) {
+			return false;
+		}
+		if (inGroup(player, group)) {
+			if(up) {
+				result = player.promote(group, track);
+			} else {
+				result = player.demote(group, track);
+			}
+		} else if (player != null) {
+			log.warning("User is not a member of the group.");
+		}
+
+		return result;
+
+	}
+
+	/**
+	 * This is the simple method to add a group to a player.
+	 * 
+	 * @param player The player to be modified
+	 * @param group The group to be added
+	 * @return if a change was made
+	 */
+	public boolean addGroup(User player, Group group) {
+		if (!inGroup(player, group)) {
+			player.addParent(group);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * This is the simple method to remove a group from a player.
+	 * 
+	 * @param player The player to be modified
+	 * @param group The group to be removed
+	 * @return if a change was made
+	 */
+	public boolean rmGroup(User player, Group group) {
+		if (inGroup(player, group)) {
+			player.removeParent(group);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	
+	public boolean inGroup(User player, Group group) {
+		return (player != null && player.inGroup(player.getWorld(), group.getName()));
+	}
+}

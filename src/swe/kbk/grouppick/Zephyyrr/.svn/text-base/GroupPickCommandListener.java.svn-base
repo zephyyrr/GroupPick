@@ -1,0 +1,269 @@
+package swe.kbk.grouppick.Zephyyrr;
+
+import java.util.LinkedList;
+import java.util.logging.Logger;
+
+import org.bukkit.Server;
+import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.Player;
+
+import com.nijiko.permissions.Group;
+import com.nijiko.permissions.PermissionHandler;
+import com.nijiko.permissions.User;
+
+/**
+ *	The listener that listens for the relevant commands and if found,
+ *	changes the senders permission group into one of the predefined groups.
+ * @author zephyyrr
+ *
+ */
+public class GroupPickCommandListener implements CommandExecutor {
+
+	Logger log;
+	GroupPick plugin;
+	PermissionHandler ph;
+	PermissionsModifier pm;
+
+	public GroupPickCommandListener(GroupPick grouppick) {
+		log = Logger.getLogger("Minecraft.bukkit.GroupPick");
+		plugin = grouppick;
+		ph = grouppick.getPermissionHandeler();
+		if (plugin == null) {
+			log.severe("PLUGIN IS NULL!");
+		}
+		if (ph == null) {
+			log.severe("PERMISSIONHANDELER IS NULL!");
+		}
+
+		pm = new PermissionsModifier(ph, log);
+
+	}
+
+	@Override
+	public boolean onCommand(CommandSender sender, Command cmd, 
+			String commandLabel, String[] args) { 
+		//log.info("JA! JAG FICK KÖRAS!!!");
+		//sender.sendMessage("Tack för att du lät mig köras!");
+
+		if (commandLabel.equalsIgnoreCase("grouppick") || commandLabel.equalsIgnoreCase("gp")) {
+			if (sender instanceof Player) { //alla CommandSenders behöver inte vara Players...
+				return pickRace((Player)sender, args);
+			} else {
+				sender.sendMessage("This command is supposed to be used by a player.");
+				return false;
+			}
+		} else if (commandLabel.equalsIgnoreCase("grouppickadmin") || commandLabel.equalsIgnoreCase("gpa")) {
+			return adminmode(sender, args);
+		} else if (commandLabel.equalsIgnoreCase("groupcheck")) {
+			return checker(sender, args);
+		}
+		return false;
+	}
+
+	private boolean checker(CommandSender sender, String[] args) {
+		if (sender instanceof Player) {
+			User u = ph.getUserObject(((Player)sender).getWorld().getName(), ((Player)sender).getName());
+			if (args.length > 0 && ((hasPermission(u, "GroupPick.check.other") || (hasPermission(u,"GroupPick.check.self") && args[0].equalsIgnoreCase(u.getName()))))) {
+				User other = ph.getUserObject(((Player)sender).getWorld().getName(), args[0]);
+
+				if (other != null) {
+					LinkedList<Group> in = new LinkedList<Group>();
+					for (Group g : plugin.getRaces()) {
+						if (pm.inGroup(other, g)) {
+							in.add(g);
+						}
+					}
+
+					if (!in.isEmpty()) {
+						StringBuilder sb = new StringBuilder(args[0] + " is a");
+
+						for (Group g : in) {
+							sb.append(" " + g.getName());
+						}
+						sb.append(".");
+						sender.sendMessage(sb.toString());
+						return true;
+					} else {
+						sender.sendMessage(args[0] + " have not choosen a race yet!");
+						return true;
+					}
+				} else {
+					sender.sendMessage("Player " + args[0] + "is not online!");
+					return true;
+				}
+
+			} else if (hasPermission(u, "GroupPick.check.self") && args[0].length() < 1) {
+				LinkedList<Group> in = new LinkedList<Group>();
+				for (Group g : plugin.getRaces()) {
+					if (pm.inGroup(u, g)) {
+						in.add(g);
+					}
+				}
+
+				if (!in.isEmpty()) {
+					StringBuilder sb = new StringBuilder("You are a");
+
+					for (Group g : in) {
+						sb.append(" " + g.getName());
+					}
+					sb.append(".");
+					sender.sendMessage(sb.toString());
+					return true;
+				} else {
+					sender.sendMessage("You have not choosen a race yet!");
+					return true;
+				}
+			} else {
+				sender.sendMessage("You do not have permission for this command!");
+			}
+		} else {
+			sender.sendMessage("You are not a player!");
+		}
+		return false;
+	}
+
+	private boolean adminmode(CommandSender sender, String[] args) {
+		if(sender instanceof Player) {
+			User u = ph.getUserObject(((Player)sender).getWorld().getName(), ((Player)sender).getName());
+
+			if (hasPermission(u, "GroupPick.admin")) {
+				adminDoer(sender,((Player)sender).getWorld(), args);
+			} else {
+				noPermsAction(sender);
+			}
+		} else if (sender instanceof ConsoleCommandSender) {
+			if (args.length >= 4) {
+				adminDoer(sender, sender.getServer().getWorld(args[3]), args);
+			} else {
+				adminDoer(sender, sender.getServer().getWorlds().get(0), args);
+			}
+
+		}
+
+
+		return false;
+	}
+
+	/**
+	 * @param sender
+	 * @param args
+	 */
+	public boolean adminDoer(CommandSender sender, World world, String[] args) {
+		sender.sendMessage("You have access to this command!");
+
+		if(args.length >= 3) {
+
+			User target = ph.getUserObject(world.getName(), args[2]);
+
+			if (args[1].equalsIgnoreCase("add") || args[1].equalsIgnoreCase("a")) {
+				if (target != null && plugin.getGroup(args[2]) != null) {
+					pm.addGroup(target, plugin.getGroup(args[2]));
+					return true;
+				} else {
+					if (target == null) {
+						sender.sendMessage("Could not find target!");
+					}
+					if (plugin.getGroup(args[2]) == null) {
+						sender.sendMessage("The group does not exist!");
+					}
+					return false;
+				}
+			} else if (args[1].equalsIgnoreCase("remove") || args[1].equalsIgnoreCase("r")) {
+				if (target != null && plugin.getGroup(args[2]) != null) {
+					pm.rmGroup(target, plugin.getGroup(args[2]));
+					return true;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			return false;
+		}
+		return false;
+	}
+
+	/**
+	 * @param sender
+	 */
+	public void noPermsAction(CommandSender sender) {
+		sender.sendMessage("You do not have access to this command!");
+	}
+
+	/**
+	 * @param sender
+	 * @param args
+	 * @return
+	 * @throws Throwable
+	 */
+	public boolean pickRace(Player sender, String[] args) {
+		if(args.length < 1) {
+			sender.sendMessage("You forgot to choose a race!");
+			return false;
+		}
+
+		String targetGroup = args[0].substring(0,1).toUpperCase() + args[0].substring(1).toLowerCase();
+
+
+
+		sender.sendMessage("I have heard your wish to become a " + targetGroup + ", " + ((Player)sender).getName());
+
+		boolean res = false;
+		User u = ph.getUserObject(sender.getWorld().getName(), sender.getName());
+
+		if (hasPermission(u, "GroupPick.choose." + targetGroup)) { // perm check
+
+			if (u.inGroup(u.getWorld(), targetGroup)) {
+				sender.sendMessage("You have already choosen this race.");
+				return true;
+			}
+
+			for (Group g : plugin.getRaces()) {
+				if (u.inGroup(u.getWorld(), g.getName()) && !hasPermission(u, "GroupPick.override.choose")) {
+					sender.sendMessage("You have already choosen another race.");
+					return true;
+				}
+			}
+
+			if (hasPermission(u, "GroupPick.choose." + targetGroup)) { // perm check igen.. Man vet ju aldrig...
+				if (plugin.getRaces().contains(plugin.getGroup(targetGroup))) {
+					res = pm.addGroup(u, plugin.getGroup(targetGroup));
+				} else {
+					sender.sendMessage("That race does not exist!");
+					sender.sendMessage("The races are: " + plugin.getRacesAsString());
+				}
+			} else {
+				sender.sendMessage("You do not have permission to choose that race!");
+				return true;
+			}
+			if (res) {
+				sender.sendMessage("Congratulation!, You have been transformed into an " + targetGroup);
+				log.info(((Player)sender).getName() + " have choosen to play as a " + targetGroup);
+				if (u.inGroup(u.getWorld(), plugin.getGuestGroup().getName())) {
+					res = pm.changeGroup(u, plugin.getGuestGroup(), "status", true);
+				}
+			} else {
+				sender.sendMessage("Something went wrong during your transformation.");
+				sender.sendMessage("Please use a legitimate race next time.");
+				sender.sendMessage("The races are: " + plugin.getRacesAsString());
+			}
+			return res;
+		} else {
+			sender.sendMessage("You do not have permission to choose that race!");
+			return true;
+		}
+	}
+
+	public boolean hasPermission(User user, String perm) {
+		String[] permnode = perm.split("/.");
+		StringBuilder parentnode = new StringBuilder();
+		for (int i = 0; i < permnode.length-1; i++) {
+			parentnode.append(permnode[i] + ".");
+		}
+		return (user.hasPermission(perm) || hasPermission(user, parentnode.toString()));
+	}
+
+}

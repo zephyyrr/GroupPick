@@ -1,0 +1,179 @@
+package swe.kbk.grouppick.Zephyyrr;
+
+import org.bukkit.Bukkit;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.java.JavaPlugin;
+//import org.bukkit.util.config.Configuration;
+
+import com.nijiko.permissions.Group;
+import com.nijiko.permissions.PermissionHandler;
+import com.nijikokun.bukkit.Permissions.Permissions;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.logging.Logger;
+
+/**
+ * Man ska kommentera ordentligt Williamsson... Annars kanske någon snor din credit...
+ * Okai..
+ * 
+ * @author Williamsson
+ * @author Zephyyrr
+ * @version 0.0.1
+ *
+ */
+public class GroupPick extends JavaPlugin {
+	public static GroupPick plugin;
+
+	public final Logger logger = Logger.getLogger("Minecraft");
+	private PermissionHandler permissionHandler;
+	public PermissionHandler getPermissionHandeler() {
+		return permissionHandler;
+	}
+	//	private Configuration commands;
+	//	private Configuration group;
+
+	//	private String commandsBasic1;
+	//	private String commandsBasic2;
+	//	private String commandsAdmin1;
+	//	private String commandsAdmin2;
+	//	private String commandsLeader1;
+	//	private String commandsLeader2;
+	private Map<String, Group> groups;
+	private ArrayList<Group> races;
+	private String defaultGroup;
+
+	private String guestGroup;
+
+	/**
+	 * This is the constructor.
+	 * Here, you instantiate all variables, but then leave them alone to be set up in the onEnable() method.
+	 */
+	public GroupPick() {
+		groups = new HashMap<String, Group>();
+		races = new ArrayList<Group>();
+	}
+
+	/**
+	 * This is run when disabling the plugin.
+	 * This needs to revert all variables to its original state.
+	 */
+	@Override
+	public void onDisable() {
+		permissionHandler = null;
+		groups.clear();
+		this.logger.info("GroupPick disabled!");
+	}
+
+	/**
+	 * This method is run when the plugin is enabled.
+	 * This means that anything needed is to be set up in here
+	 */
+	@Override
+	public void onEnable() {
+		boolean permExists = setupPermissions();
+		GroupPickCommandListener gpcl = new GroupPickCommandListener(this);
+		getCommand("grouppick").setExecutor(gpcl);
+		getCommand("gp").setExecutor(gpcl);
+		getCommand("grouppickadmin").setExecutor(gpcl);
+		getCommand("groupcheck").setExecutor(gpcl);
+		PluginDescriptionFile pdfFile = this.getDescription();
+		this.logger.info(pdfFile.getName() + " version " + pdfFile.getVersion() + " is enabled!");
+		//		commands = getConfiguration(); 
+		//		commands.setHeader("Define your groups, first what you want to call them, then their actual permissions name:");
+		//		commandsBasic1 = commands.getString("Long command:", " ");
+		//		commandsBasic2 = commands.getString("Short command:", " ");
+		//		commandsAdmin1 = commands.getString("Admin command:", " ");
+		//		commandsAdmin2 = commands.getString("Short Admin command:", " ");
+		//		commandsAdmin1 = commands.getString("Groupleader command:", " ");
+		//		commandsAdmin2 = commands.getString("Short Groupleader command:", " ");
+		//		commands.save(); 
+		//		groups.getConfiguration();
+		//		groups.setHeader("//Define your groups, and their permissions 3.1.x group:");
+
+		/*
+		 * Setting up groups
+		 */
+		if (permissionHandler != null) {
+			Collection<Group> groups_t = permissionHandler.getGroups(Bukkit.getServer().getWorlds().get(0).getName());
+			for (Group g : groups_t) {
+				groups.put(g.getName(), g);
+			}
+		}
+
+		/*
+		 * Setting up races
+		 */
+		races.add(groups.get("Human"));
+		races.add(groups.get("Dwarf"));
+		races.add(groups.get("Elf"));
+
+		/*
+		 * Sets the default groups
+		 */
+		defaultGroup = "Spirit"; //This needs changing when config-files is to be used.
+		guestGroup = "Guest"; //This needs changing when config-files is to be used.
+
+		if (!permExists) {
+			this.getPluginLoader().disablePlugin(this);
+		}
+	}
+
+	private boolean setupPermissions() {
+		if (permissionHandler != null) {
+			return true;
+		}
+		
+		Plugin permissionsPlugin = null;
+		
+		if (this.getServer() != null) {
+		permissionsPlugin = this.getServer().getPluginManager().getPlugin("Permissions");
+		}
+
+		if (permissionsPlugin == null) {
+			logger.info("Permission system not detected, disabeling plugin again.");
+			return false;
+		}
+
+		permissionHandler = ((Permissions) permissionsPlugin).getHandler();
+		logger.info("Found and will use plugin "+((Permissions)permissionsPlugin).getDescription().getFullName());
+		return true;
+	}
+
+	public Group getDefaultGroup() {
+		return groups.get(defaultGroup);
+	}
+
+	public ArrayList<Group> getRaces() {
+		return races;
+	}
+
+	public String getRacesAsString() {
+		// TODO Auto-generated method stub
+		StringBuilder sb = new StringBuilder();
+		Iterator<Group> it = races.iterator();
+		while (it.hasNext()) {
+			Group g = it.next();
+			if (it.hasNext()) {
+				sb.append(g.getName() + ", ");
+			} else {
+				sb.append("and " + g.getName());
+			}
+		}
+		return sb.toString();
+	}
+
+	public Group getGuestGroup() {
+		// TODO Auto-generated method stub
+		return getGroup(guestGroup);
+	}
+	
+	public Group getGroup(String name) {
+		return groups.get(name);
+	}
+
+}

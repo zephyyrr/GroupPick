@@ -1,0 +1,14 @@
+GuestGroup: default
+StandardGroup: Standard
+Groups:
+    Races:
+        - Human
+        - Dwarf
+        - Elf
+        - Creeptonian
+
+    Jobs:
+        - Farmer
+        - Scholar
+        - Miner
+        - Blacksmith

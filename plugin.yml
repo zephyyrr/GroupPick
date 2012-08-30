@@ -1,0 +1,87 @@
+name: GroupPick
+main: swe.kbk.grouppick.Zephyyrr.GroupPick
+version: 3.0
+commands:
+  racepick:
+    description: Puts player in a specific race permissionsgroup.
+    usage: /racepick <Race>
+  jobpick:
+    description: Puts player in a specific job permissiongroup
+    usage: /jobpick <Job>
+  groupadmin:
+    description: For now, nothing. Later, change anyones race on the fly.
+    usage: /grouppickadmin
+  supersecretstuff:
+    description: It's a secret to everybody
+    usage: /supersecretstuff
+
+permissions:
+  grouppick.*:
+    description: Gives access to all GroupPick commands
+    children:
+      grouppick.choose.*: true
+      grouppick.override.*: true
+      grouppick.check.*: true
+      grouppick.admin.*: true 
+      
+  grouppick.choose.*:
+    description: Gives access to all GroupPick's choose commands
+    children:
+      grouppick.choose.job.*: true
+      grouppick.choose.race.*: true
+      
+  grouppick.choose.job.*:
+    description: Gives access to all GroupPick's choose job commands
+    children:
+      grouppick.choose.job.miner: true
+      grouppick.choose.job.enchanter: true
+      grouppick.choose.job.alchemist: true
+      grouppick.choose.job.farmer: true
+      
+  grouppick.choose.job.miner:
+    description: Allows you to choose the job miner
+    default: false
+    
+  grouppick.choose.job.enchanter:
+    description: Allows you to choose the job enchanter
+    default: false
+    
+  grouppick.choose.job.alchemist:
+    description: Allows you to choose the job alchemist
+    default: false
+    
+  grouppick.choose.job.farmer:
+    description: Allows you to choose the job farmer
+    default: false
+      
+  grouppick.choose.race.*:
+    description: Gives access to all GroupPick's choose race commands
+    children:
+      grouppick.choose.human: true
+      grouppick.choose.dwarf: true
+      grouppick.choose.elf: true 
+      
+  grouppick.choose.human:
+    description: Allows you to choose the race human
+    default: false
+    
+  grouppick.choose.dwarf:
+    description: Allows you to choose the race human
+    default: false
+    
+  grouppick.choose.elf:
+    description: Allows you to choose the race human
+    default: false
+    
+  grouppick.override.*:
+    description: Gives access to override all thing that is overridable
+    children:
+      grouppick.override.choose: true   
+        
+  grouppick.override.choose:
+    description: Allows you to override the check if you already have a race.
+    default: false
+    
+  grouppick.admin.*:
+    description: Allows you administrate grouppick.
+    default: false
